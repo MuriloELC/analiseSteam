@@ -1,0 +1,22 @@
+{
+  "pct_free_vs_paid": {
+    "free_pct": 5.0,
+    "paid_pct": 95.0,
+    "counts": { "free": 1, "paid": 19, "total": 20 }
+  },
+  "years_with_most_new_games": {
+    "max_count": 5,
+    "years": [2020]
+  },
+  "top_genres_in_peak_year": {
+    "peak_years": [2020],
+    "genres_ranked": [
+      { "genre": "Indie", "count": 4 },
+      { "genre": "Action", "count": 3 },
+      { "genre": "Casual", "count": 2 },
+      { "genre": "Adventure", "count": 1 },
+      { "genre": "Free to Play", "count": 1 }
+    ],
+    "top_n": 5
+  }
+}
