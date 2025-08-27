@@ -253,37 +253,33 @@ class GameParser:
         >>> g.genres
         ['Action', 'Indie']
         """
-        # Normaliza valores a strings (ou "")
-        def norm(v: Any) -> str:
-            if v is None:
-                return ""
-            return str(v)
-
-        name = norm(row.get("Name")).strip()
-        rel = norm(row.get("Release date")).strip()
-        price_raw = norm(row.get("Price")).strip()
-        genres_raw = norm(row.get("Genres")).strip()
-        dev = norm(row.get("Developers")).strip()
-        pub = norm(row.get("Publishers")).strip()
-
-        if not name:
-            name = None
-
-        price = GameParser.parse_price(price_raw)
-        year = GameParser.parse_year(rel)
-        genres = GameParser.parse_genres(genres_raw)  # pode ser []
-
-        is_free = (price == 0.0) if (price is not None) else False
-
-        raw_norm = {
-            "Name": name or "",
-            "Release date": rel,
-            "Price": price_raw,
-            "Genres": genres_raw,
-            "Developers": dev,
-            "Publishers": pub,
+        # Pego as colunas que importam e converto tudo para string sem espaços
+        fields = {
+            k: str(row.get(k, "") or "").strip()
+            for k in ("Name", "Release date", "Price", "Genres", "Developers", "Publishers")
         }
 
+        # Guardo cada campo em variáveis com nomes mais curtos
+        name = fields["Name"] or None
+        rel = fields["Release date"]
+        price_raw = fields["Price"]
+        genres_raw = fields["Genres"]
+        dev = fields["Developers"]
+        pub = fields["Publishers"]
+
+        # Converto texto para os tipos que vou usar depois
+        price = GameParser.parse_price(price_raw)
+        year = GameParser.parse_year(rel)
+        genres = GameParser.parse_genres(genres_raw)  # pode ser lista vazia
+
+        # Se o preço for zero marco como gratuito
+        is_free = (price == 0.0) if (price is not None) else False
+
+        # Copio o dicionário para manter os dados normalizados que chegaram
+        raw_norm = fields.copy()
+        raw_norm["Name"] = name or ""
+
+        # Finalmente crio a instância de Game com tudo já tratado
         return Game(
             name=name,
             is_free=is_free,
