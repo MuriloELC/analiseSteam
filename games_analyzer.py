@@ -69,7 +69,7 @@ class Game:
     """Entidade de jogo.
 
     Atributos:
-      name: nome do jogo (str, obrigatório)
+      name: nome do jogo (str | None)
       is_free: derivado de price == 0.0 quando price válido; se price inválido → False
       price: float | None
       year: int | None
@@ -81,7 +81,7 @@ class Game:
     __post_init__ faz validações e normalizações básicas.
     """
 
-    name: str
+    name: Optional[str]
     is_free: bool
     price: Optional[float]
     year: Optional[int]
@@ -92,8 +92,9 @@ class Game:
 
     def __post_init__(self) -> None:
         # Tipos básicos
-        if not isinstance(self.name, str) or not self.name.strip():
-            raise DataValidationError("Game.name inválido (vazio ou não-string).")
+        if self.name is not None:
+            if not isinstance(self.name, str) or not self.name.strip():
+                raise DataValidationError("Game.name inválido (string vazia ou não-string).")
         if self.price is not None and not isinstance(self.price, float):
             raise DataValidationError("Game.price deve ser float ou None.")
         if self.year is not None and not isinstance(self.year, int):
@@ -241,6 +242,7 @@ class GameParser:
         """Converte uma linha normalizada (ver GameDataset) em Game.
 
         is_free = (price == 0.0) quando price válido; caso inválido → price=None e is_free=False.
+        Se "Name" estiver vazio, o atributo ``name`` será ``None``.
 
         >>> r = {'Name':'Foo', 'Release date':'Oct 21, 2008', 'Price':'0.00', 'Genres':'Action, Indie', 'Developers':'ACME', 'Publishers':'ACME'}
         >>> g = GameParser.parse(r)
@@ -265,7 +267,7 @@ class GameParser:
         pub = norm(row.get("Publishers")).strip()
 
         if not name:
-            raise DataValidationError("Linha sem Name.")
+            name = None
 
         price = GameParser.parse_price(price_raw)
         year = GameParser.parse_year(rel)
@@ -274,7 +276,7 @@ class GameParser:
         is_free = (price == 0.0) if (price is not None) else False
 
         raw_norm = {
-            "Name": name,
+            "Name": name or "",
             "Release date": rel,
             "Price": price_raw,
             "Genres": genres_raw,
