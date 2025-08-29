@@ -241,7 +241,14 @@ class GameParser:
         is_free = (price == 0.0) quando price válido; caso inválido → price=None e is_free=False.
         Se "Name" estiver vazio, o atributo ``name`` será ``None``.
 
-        >>> r = {'Name':'Foo', 'Release date':'Oct 21, 2008', 'Price':'0.00', 'Genres':'Action, Indie', 'Developers':'ACME', 'Publishers':'ACME'}
+        >>> r = {
+        ...     'Name': 'Foo',
+        ...     'Release date': 'Oct 21, 2008',
+        ...     'Price': '0.00',
+        ...     'Genres': 'Action, Indie',
+        ...     'Developers': 'ACME',
+        ...     'Publishers': 'ACME'
+        ... }
         >>> g = GameParser.parse(r)
         >>> g.is_free
         True
