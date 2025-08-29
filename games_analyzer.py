@@ -3,28 +3,25 @@
 """
 games_analyzer.py
 -----------------
-Analisador de jogos a partir de um CSV, usando apenas a biblioteca padrão.
+Analisador de jogos a partir de um CSV.
 
 Recursos:
-- Carrega dataset CSV e faz parsing robusto (datas, preços, listas de gêneros).
+- Carrega dataset CSV e faz parsing (datas, preços, listas de gêneros).
 - API OO para consultas (percentual grátis/pago, anos de pico, gêneros no(s) ano(s) de pico).
-- Gera amostra determinística (20 jogos) excluindo os 20 primeiros registros.
+- Gera amostra (20 jogos).
 - Valida resultados sobre a amostra contra expected_results.json (gera template se ausente).
 - Funciona por CLI e por import.
 - Gera relatório Markdown (report.md).
 
-Dependências: apenas stdlib (csv, argparse, pathlib, dataclasses, datetime, re, json,
-random, textwrap, itertools, collections, io, typing, unittest, doctest, statistics opcional).
-
 Exemplos:
   Gerar amostra e relatório:
-    python games_analyzer.py --csv data/games.csv --generate-sample --report report.md
+    python games_analyzer.py --csv data/gasteam_gamesmes.csv --generate-sample --report report.md
 
   Preparar template e rodar testes da amostra:
-    python games_analyzer.py --csv data/games.csv --run-sample-tests
+    python games_analyzer.py --csv data/steam_games.csv --run-sample-tests
 
   Rodar as respostas no console:
-    python games_analyzer.py --csv data/games.csv
+    python games_analyzer.py --csv data/steam_games.csv
 """
 from __future__ import annotations
 
@@ -70,7 +67,7 @@ class Game:
 
     Atributos:
       name: nome do jogo (str | None)
-      is_free: derivado de price == 0.0 quando price válido; se price inválido → False
+      is_free: vem de price == 0.0 quando price válido; se price inválido -> False
       price: float | None
       year: int | None
       genres: list[str]
@@ -376,7 +373,7 @@ class GameDataset:
         return games
 
     def load(self) -> list[Game]:
-        """Lê o CSV principal e retorna lista de Game (fail-soft).
+        """Lê o CSV principal e retorna lista de Game.
 
         Agora aceita `Genres` vazio (vira lista []), e só marca inválido quando
         há um problema essencial (ex.: `Name` vazio).
@@ -749,19 +746,18 @@ class ReportBuilder:
         md.write("## Metodologia\n")
         md.write(textwrap.dedent("""
         - **Parsing de dados**: datas em múltiplos formatos; fallback por regex de ano (`\\b(19|20)\\d{2}\\b`).
-        - **Preço**: limpeza de símbolos/textos; vírgulas → ponto; palavras como *Free/Gratuito* → 0.0.
-        - **Gratuito**: inferido por `Price == 0.0` (quando `price` válido). Preços inválidos contam como **não grátis**.
+        - **Preço**: limpeza de símbolos/textos; vírgulas → ponto; palavras como *Free/Gratuito* -> 0.0.
+        - **Gratuito**: inferido por `Price == 0.0` (quando `price` válido).
         - **Gêneros**: separados por vírgulas, com espaços aparados; vazios descartados.
-        - **Linhas inválidas**: processamento *fail-soft* (apenas casos essenciais, como `Name` vazio).
         """).strip() + "\n\n")
 
         md.write("## Pergunta 1 — % grátis vs pagos\n\n")
-        md.write("| Métrica | Valor |\n|---|---|\n")
-        md.write(tbl_row("Jogos grátis", p1["counts"]["free"]) + "\n")
-        md.write(tbl_row("Jogos pagos", p1["counts"]["paid"]) + "\n")
-        md.write(tbl_row("Total", p1["counts"]["total"]) + "\n")
-        md.write(tbl_row("% grátis", f"{p1['free_pct']:.1f}%") + "\n")
-        md.write(tbl_row("% pagos", f"{p1['paid_pct']:.1f}%") + "\n\n")
+        md.write("| Métrica       | Valor |\n|---------------|-------|\n")
+        md.write(tbl_row("Jogos grátis ", p1["counts"]["free"]) + "\n")
+        md.write(tbl_row("Jogos pagos  ", p1["counts"]["paid"]) + "\n")
+        md.write(tbl_row("Total        ", p1["counts"]["total"]) + "\n")
+        md.write(tbl_row("% grátis     ", f"{p1['free_pct']:.1f}%") + "\n")
+        md.write(tbl_row("% pagos      ", f"{p1['paid_pct']:.1f}%") + "\n\n")
         md.write(textwrap.dedent("""
         **Discussão**: a razão grátis/pago sugere estratégia de monetização (F2P, DLCs, cosméticos),
         além de efeitos de catálogo legado e promoções.
@@ -781,9 +777,9 @@ class ReportBuilder:
         md.write("## Pergunta 3 — Gêneros nos anos de pico\n\n")
         if p3["peak_years"] and p3["genres_ranked"]:
             md.write(f"- Anos de pico: {', '.join(map(str, p3['peak_years']))}\n\n")
-            md.write("| Rank | Gênero | Contagem |\n|---:|---|---:|\n")
+            md.write("| Rank | Gênero | Contagem |\n|------|--------|----------|\n")
             for i, item in enumerate(p3["genres_ranked"], start=1):
-                md.write(f"| {i} | {item['genre']} | {item['count']} |\n")
+                md.write(f"| {i}     | {item['genre']}  | {item['count']}     |\n")
             md.write("\n")
         else:
             md.write("- **Sem gêneros válidos** para anos de pico.\n\n")
@@ -830,10 +826,6 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                    help="Roda doctest + unittest embutidos.")
     p.add_argument("--report", type=Path, default=None,
                    help="Gera report.md no caminho indicado.")
-    p.add_argument("--top-n", type=int, default=5, help="Top-N de gêneros nos anos de pico (default: 5).")
-    p.add_argument("--quiet", action="store_true", help="Silencia saídas informativas.")
-    p.add_argument("--debug-invalid", action="store_true",
-                   help="Exibe as linhas inválidas (número da linha e motivo) ao carregar o dataset completo.")
     return p
 
 
@@ -884,7 +876,7 @@ def main(argv: Optional[Iterable[str]] = None) -> int:
 
             analytics = GameAnalytics(games)
 
-            # Se nenhum modo especial e sem --report, imprime respostas no console
+            # Se nenhum modo --report, imprime respostas no console
             if not any([args.generate_sample, args.run_sample_tests, args.run_internal_tests, args.report]):
                 p1 = analytics.pct_free_vs_paid()
                 p2 = analytics.years_with_most_new_games()
