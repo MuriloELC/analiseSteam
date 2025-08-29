@@ -10,5 +10,6 @@ python games_analyzer.py --csv steam_games.csv
 Para gerar o relatório:
 python games_analyzer.py --csv steam_games.csv --report report.md
 
-Para ver detalhes das linhas realmente inválidas (ex.: Name vazio):
-python games_analyzer.py --csv steam_games.csv --debug-invalid
+Para suprimir saídas, ver detalhes das linhas inválidas e limitar gêneros (ex.: top 10):
+python games_analyzer.py --csv steam_games.csv --quiet --debug-invalid --top-n 10
+
