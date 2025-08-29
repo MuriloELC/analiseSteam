@@ -826,6 +826,12 @@ def _build_arg_parser() -> argparse.ArgumentParser:
                    help="Roda doctest + unittest embutidos.")
     p.add_argument("--report", type=Path, default=None,
                    help="Gera report.md no caminho indicado.")
+    p.add_argument("--quiet", action="store_true",
+                   help="Suprime saídas.")
+    p.add_argument("--debug-invalid", action="store_true",
+                   help="Exibe detalhes de linhas inválidas.")
+    p.add_argument("--top-n", type=int, default=5,
+                   help="Limita o número de gêneros.")
     return p
 
 
