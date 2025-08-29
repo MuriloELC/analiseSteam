@@ -253,13 +253,18 @@ class GameParser:
         >>> g.genres
         ['Action', 'Indie']
         """
+
         # Pego as colunas que importam e converto tudo para string sem espaços
+
+        # Normaliza valores a strings (ou "") via compreensão
+
         fields = {
             k: str(row.get(k, "") or "").strip()
             for k in ("Name", "Release date", "Price", "Genres", "Developers", "Publishers")
         }
 
         # Guardo cada campo em variáveis com nomes mais curtos
+
         name = fields["Name"] or None
         rel = fields["Release date"]
         price_raw = fields["Price"]
@@ -275,7 +280,9 @@ class GameParser:
         # Se o preço for zero marco como gratuito
         is_free = (price == 0.0) if (price is not None) else False
 
+
         # Copio o dicionário para manter os dados normalizados que chegaram
+
         raw_norm = fields.copy()
         raw_norm["Name"] = name or ""
 
@@ -342,50 +349,43 @@ class GameDataset:
             out[key] = "" if val is None else str(val)
         return out
 
+    def _read_games(self, csv_path: Path, record_invalid: bool) -> list[Game]:
+        csv_path = Path(csv_path)
+        if not csv_path.exists():
+            raise DataValidationError(f"Arquivo CSV não encontrado: {csv_path}")
+        games: list[Game] = []
+        if record_invalid:
+            self.invalid_rows_count = 0
+            self.invalid_rows_detail = []
+        with csv_path.open("r", encoding="utf-8-sig", newline="") as f:
+            reader = csv.DictReader(f)
+            fieldnames = list(reader.fieldnames or [])
+            field_map = self._build_field_map(fieldnames)
+            if record_invalid:
+                self.loaded_field_map = field_map
+            for idx, row in enumerate(reader, start=2):
+                try:
+                    norm = self._normalize_row(row, field_map)
+                    game = GameParser.parse(norm)
+                    games.append(game)
+                except DataValidationError as e:
+                    if record_invalid:
+                        self.invalid_rows_count += 1
+                        self.invalid_rows_detail.append((idx, str(e)))
+                    continue
+        return games
+
     def load(self) -> list[Game]:
         """Lê o CSV principal e retorna lista de Game (fail-soft).
 
         Agora aceita `Genres` vazio (vira lista []), e só marca inválido quando
         há um problema essencial (ex.: `Name` vazio).
         """
-        if not self.csv_path.exists():
-            raise DataValidationError(f"Arquivo CSV não encontrado: {self.csv_path}")
-        games: list[Game] = []
-        self.invalid_rows_count = 0
-        self.invalid_rows_detail = []
-        with self.csv_path.open("r", encoding="utf-8-sig", newline="") as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
-            field_map = self._build_field_map(fieldnames)
-            self.loaded_field_map = field_map
-            for idx, row in enumerate(reader, start=2):  # 1 = cabeçalho
-                try:
-                    norm = self._normalize_row(row, field_map)
-                    game = GameParser.parse(norm)
-                    games.append(game)
-                except DataValidationError as e:
-                    self.invalid_rows_count += 1
-                    self.invalid_rows_detail.append((idx, str(e)))
-                    continue
-        return games
+        return self._read_games(self.csv_path, record_invalid=True)
 
     def load_from_file(self, csv_file: Path) -> list[Game]:
         """Carrega jogos de qualquer CSV (mesma lógica de parsing/normalização)."""
-        if not Path(csv_file).exists():
-            raise DataValidationError(f"Arquivo CSV não encontrado: {csv_file}")
-        games: list[Game] = []
-        with Path(csv_file).open("r", encoding="utf-8-sig", newline="") as f:
-            reader = csv.DictReader(f)
-            fieldnames = list(reader.fieldnames or [])
-            field_map = self._build_field_map(fieldnames)
-            for idx, row in enumerate(reader, start=2):
-                try:
-                    norm = self._normalize_row(row, field_map)
-                    game = GameParser.parse(norm)
-                    games.append(game)
-                except DataValidationError:
-                    continue
-        return games
+        return self._read_games(Path(csv_file), record_invalid=False)
 
     def sample_once(self, output_dir: Path, k: int = 20, seed: int = 1234) -> Path:
         """Cria sample/sample.csv determinística (não sobrescreve se existir).
