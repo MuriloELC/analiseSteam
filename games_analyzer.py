@@ -253,11 +253,17 @@ class GameParser:
         >>> g.genres
         ['Action', 'Indie']
         """
+
+        # Pego as colunas que importam e converto tudo para string sem espaços
+
         # Normaliza valores a strings (ou "") via compreensão
+
         fields = {
             k: str(row.get(k, "") or "").strip()
             for k in ("Name", "Release date", "Price", "Genres", "Developers", "Publishers")
         }
+
+        # Guardo cada campo em variáveis com nomes mais curtos
 
         name = fields["Name"] or None
         rel = fields["Release date"]
@@ -266,15 +272,21 @@ class GameParser:
         dev = fields["Developers"]
         pub = fields["Publishers"]
 
+        # Converto texto para os tipos que vou usar depois
         price = GameParser.parse_price(price_raw)
         year = GameParser.parse_year(rel)
-        genres = GameParser.parse_genres(genres_raw)  # pode ser []
+        genres = GameParser.parse_genres(genres_raw)  # pode ser lista vazia
 
+        # Se o preço for zero marco como gratuito
         is_free = (price == 0.0) if (price is not None) else False
+
+
+        # Copio o dicionário para manter os dados normalizados que chegaram
 
         raw_norm = fields.copy()
         raw_norm["Name"] = name or ""
 
+        # Finalmente crio a instância de Game com tudo já tratado
         return Game(
             name=name,
             is_free=is_free,
